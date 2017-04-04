@@ -1,3 +1,11 @@
 <resources>
     <string name="app_name">Weather Forecast</string>
+    <string name="default_location">Default City, Country</string>
+    <string name="default_description">Description</string>
+    <string name="default_average_day">Average Day: 10 C</string>
+    <string name="default_average_night">Average Night: 5 C</string>
+    <string name="default_wind">Wind: 10 km/h</string>
+    <string name="default_pressure">Pressure: 980 hPa</string>
+    <string name="default_humidity">Humidity: 60%</string>
+    <string name="default_date">12.12.2012</string>
 </resources>
