@@ -1,10 +1,12 @@
 package com.example.alex.weatherforecast;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.Handler;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.content.ContextCompat;
@@ -27,6 +29,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -84,7 +87,8 @@ public class MainActivity extends AppCompatActivity implements ConnectionCallbac
         switch (item.getItemId()) {
             case R.id.menu_update:
                 forecasts.clear();
-                onConnected(null);
+                googleApiClient.disconnect();
+                googleApiClient.connect();
                 return true;
 
             default:
@@ -97,7 +101,11 @@ public class MainActivity extends AppCompatActivity implements ConnectionCallbac
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
             Location lastLocation = LocationServices.FusedLocationApi.getLastLocation(googleApiClient);
-            updateWeather(lastLocation.getLatitude(), lastLocation.getLongitude());
+            if (lastLocation != null) {
+                updateWeather(lastLocation.getLatitude(), lastLocation.getLongitude(), this);
+            } else {
+                updateWeather(-1, -1, this);
+            }
         }
     }
 
@@ -111,23 +119,32 @@ public class MainActivity extends AppCompatActivity implements ConnectionCallbac
 
     }
 
-    //todo: add menu for update
-    //todo: cache weather
-
-    private void updateWeather(final double lat, final double lon) {
+    private void updateWeather(final double lat, final double lon, final Context context) {
         new Thread() {
             @Override
             public void run() {
-                final JSONObject json = RemoteFetch.getJSON(lat, lon);
-                if (json != null) {
-                    handler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            renderWeather(json);
-                            adapter.notifyDataSetChanged();
-                        }
-                    });
+                final JSONObject[] json = new JSONObject[1];
+                if (lat == -1 && lon == -1) {
+                    try {
+                        json[0] = new JSONObject(PreferenceManager.
+                                getDefaultSharedPreferences(context).getString("theJson", ""));
+                    } catch (JSONException e) {
+                        Log.e(TAG, "Unable to create json", e);
+                    }
+                } else {
+                    json[0] = RemoteFetch.getJSON(lat, lon);
+                    if (json[0] != null) {
+                        PreferenceManager.getDefaultSharedPreferences(context).edit()
+                                .putString("theJson", json[0].toString()).apply();
+                    }
                 }
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        renderWeather(json[0]);
+                        adapter.notifyDataSetChanged();
+                    }
+                });
             }
         }.start();
     }
@@ -139,20 +156,41 @@ public class MainActivity extends AppCompatActivity implements ConnectionCallbac
 
             for (int i = 0; i < jsonArray.length(); i++) {
                 JSONObject jDayForecast = jsonArray.getJSONObject(i);
-                JSONObject temp = jDayForecast.getJSONObject("temp");
-                JSONObject weather = jDayForecast.getJSONArray("weather").getJSONObject(0);
-                Forecast forecast = new Forecast();
 
-                forecast.setDescription(weather.getString("description"));
-                forecast.setAverageDay(temp.getDouble("day"));
-                forecast.setAverageNight(temp.getDouble("night"));
-                forecast.setWind(jDayForecast.getDouble("speed"));
-                forecast.setPressure(jDayForecast.getDouble("pressure"));
-                forecast.setHumidity(jDayForecast.getDouble("humidity"));
-                forecast.setDate(new Date(jDayForecast.getLong("dt") * 1000));
-                forecast.setIconName(weather.getString("icon"));
+                Date forecastDate = new Date(jDayForecast.getLong("dt") * 1000);
+                Date now = new Date();
+                Calendar forecastCalendar = Calendar.getInstance();
+                Calendar nowCalendar = Calendar.getInstance();
 
-                forecasts.add(forecast);
+                forecastCalendar.setTime(forecastDate);
+                forecastCalendar.set(Calendar.HOUR_OF_DAY, 0);
+                forecastCalendar.set(Calendar.MINUTE, 0);
+                forecastCalendar.set(Calendar.SECOND, 0);
+                forecastCalendar.set(Calendar.MILLISECOND, 0);
+
+                nowCalendar.setTime(now);
+                nowCalendar.set(Calendar.HOUR_OF_DAY, 0);
+                nowCalendar.set(Calendar.MINUTE, 0);
+                nowCalendar.set(Calendar.SECOND, 0);
+                nowCalendar.set(Calendar.MILLISECOND, 0);
+
+                int compare = forecastCalendar.compareTo(nowCalendar);
+                if (compare == 0 || compare == 1) {
+                    JSONObject temp = jDayForecast.getJSONObject("temp");
+                    JSONObject weather = jDayForecast.getJSONArray("weather").getJSONObject(0);
+                    Forecast forecast = new Forecast();
+
+                    forecast.setDescription(weather.getString("description"));
+                    forecast.setAverageDay(temp.getDouble("day"));
+                    forecast.setAverageNight(temp.getDouble("night"));
+                    forecast.setWind(jDayForecast.getDouble("speed"));
+                    forecast.setPressure(jDayForecast.getDouble("pressure"));
+                    forecast.setHumidity(jDayForecast.getDouble("humidity"));
+                    forecast.setDate(forecastDate);
+                    forecast.setIconName(weather.getString("icon"));
+
+                    forecasts.add(forecast);
+                }
             }
         } catch (JSONException e) {
             Log.e(TAG, "One or more fields not found in the JSON data", e);
