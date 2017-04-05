@@ -17,7 +17,7 @@ public class RemoteFetch {
     private static final String TAG = RemoteFetch.class.getSimpleName();
     private static final String APPID = "68ecb9f534e9aa87f423b522070def30";
     private static final String OPEN_WEATHER_MAP_API =
-            "http://api.openweathermap.org/data/2.5/weather?q=%s&units=metric&cnt=5&APPID=" + APPID;
+            "http://api.openweathermap.org/data/2.5/forecast/daily?q=%s&units=metric&cnt=5&APPID=" + APPID;
 
     public static JSONObject getJSON(String city) {
         try {
