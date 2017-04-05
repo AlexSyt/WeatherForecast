@@ -17,11 +17,11 @@ public class RemoteFetch {
     private static final String TAG = RemoteFetch.class.getSimpleName();
     private static final String APPID = "68ecb9f534e9aa87f423b522070def30";
     private static final String OPEN_WEATHER_MAP_API =
-            "http://api.openweathermap.org/data/2.5/forecast/daily?q=%s&units=metric&cnt=5&APPID=" + APPID;
+            "http://api.openweathermap.org/data/2.5/forecast/daily?lat=%f&lon=%f&units=metric&cnt=5&APPID=%s";
 
-    public static JSONObject getJSON(String city) {
+    public static JSONObject getJSON(final double lat, final double lon) {
         try {
-            URL url = new URL(String.format(OPEN_WEATHER_MAP_API, city));
+            URL url = new URL(String.format(OPEN_WEATHER_MAP_API, lat, lon, APPID));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
             BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));

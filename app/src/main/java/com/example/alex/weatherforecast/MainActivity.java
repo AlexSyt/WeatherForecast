@@ -1,12 +1,24 @@
 package com.example.alex.weatherforecast;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.location.Location;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.widget.TextView;
+
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
+import com.google.android.gms.common.api.GoogleApiClient.OnConnectionFailedListener;
+import com.google.android.gms.location.LocationServices;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -16,13 +28,14 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements ConnectionCallbacks, OnConnectionFailedListener {
 
     private final String TAG = MainActivity.class.getSimpleName();
     private TextView tvLocation;
     private List<Forecast> forecasts;
     private CardAdapter adapter;
     private Handler handler;
+    private GoogleApiClient googleApiClient;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,27 +46,58 @@ public class MainActivity extends AppCompatActivity {
         forecasts = new ArrayList<>();
         handler = new Handler();
 
+        googleApiClient = new GoogleApiClient.Builder(this, this, this).addApi(LocationServices.API).build();
+
         RecyclerView recyclerView = (RecyclerView) findViewById(R.id.recycler_view);
         recyclerView.setHasFixedSize(true);
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         recyclerView.setLayoutManager(layoutManager);
 
-        String location = "kyiv,ua";
-        updateWeather(location);
-        tvLocation.setText(location);
-
         adapter = new CardAdapter(forecasts, this);
         recyclerView.setAdapter(adapter);
     }
 
-    //todo: get city from current location
+    @Override
+    protected void onStart() {
+        super.onStart();
+        if (googleApiClient != null) {
+            googleApiClient.connect();
+        }
+    }
+
+    @Override
+    protected void onStop() {
+        googleApiClient.disconnect();
+        super.onStop();
+    }
+
+    @Override
+    public void onConnected(@Nullable Bundle bundle) {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
+            Location lastLocation = LocationServices.FusedLocationApi.getLastLocation(googleApiClient);
+            updateWeather(lastLocation.getLatitude(), lastLocation.getLongitude());
+        }
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+
+    }
+
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+
+    }
+
     //todo: add menu for update
     //todo: cache weather
-    private void updateWeather(final String city) {
+
+    private void updateWeather(final double lat, final double lon) {
         new Thread() {
             @Override
             public void run() {
-                final JSONObject json = RemoteFetch.getJSON(city);
+                final JSONObject json = RemoteFetch.getJSON(lat, lon);
                 if (json != null) {
                     handler.post(new Runnable() {
                         @Override
@@ -70,6 +114,7 @@ public class MainActivity extends AppCompatActivity {
     private void renderWeather(JSONObject json) {
         try {
             JSONArray jsonArray = json.getJSONArray("list");
+            tvLocation.setText(json.getJSONObject("city").getString("name"));
 
             for (int i = 0; i < jsonArray.length(); i++) {
                 JSONObject jDayForecast = jsonArray.getJSONObject(i);
@@ -87,7 +132,6 @@ public class MainActivity extends AppCompatActivity {
                 forecast.setIconName(weather.getString("icon"));
 
                 forecasts.add(forecast);
-                Log.i(TAG, "create forecast" + i);
             }
         } catch (JSONException e) {
             Log.e(TAG, "One or more fields not found in the JSON data", e);
