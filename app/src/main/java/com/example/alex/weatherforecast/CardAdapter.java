@@ -15,6 +15,8 @@ import java.util.List;
 
 public class CardAdapter extends RecyclerView.Adapter<CardAdapter.CardViewHolder> {
 
+    private final static String ICON_PATH = "http://openweathermap.org/img/w/";
+    private final static String ICON_EXTENSION = ".png";
     private final List<Forecast> forecasts;
     private final Context context;
 
@@ -42,7 +44,7 @@ public class CardAdapter extends RecyclerView.Adapter<CardAdapter.CardViewHolder
         holder.tvPressure.setText(String.format("Pressure: %.2f hPa", forecast.getPressure()));
         holder.tvHumidity.setText(String.format("Humidity: %.2f", forecast.getHumidity()) + "%");
         holder.tvDate.setText(sdf.format(forecast.getDate()));
-        String iconUrl = "http://openweathermap.org/img/w/" + forecast.getIconName() + ".png";
+        String iconUrl = ICON_PATH + forecast.getIconName() + ICON_EXTENSION;
         Picasso.with(context).load(iconUrl).into(holder.ivWeatherIcon);
     }
 
