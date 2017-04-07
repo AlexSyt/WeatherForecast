@@ -36,6 +36,22 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity implements ConnectionCallbacks, OnConnectionFailedListener {
 
     private final String TAG = MainActivity.class.getSimpleName();
+    private static final String JSON_KEY = "theJson";
+    private static final String LIST = "list";
+    private static final String CITY = "city";
+    private static final String NAME = "name";
+    private static final String DATE = "dt";
+    private static final String TEMP = "temp";
+    private static final String WEATHER = "weather";
+    private static final String DESCRIPTION = "description";
+    private static final String DAY = "day";
+    private static final String NIGHT = "night";
+    private static final String SPEED = "speed";
+    private static final String PRESSURE = "pressure";
+    private static final String HUMIDITY = "humidity";
+    private static final String ICON = "icon";
+    private static final int wrongLat = -1;
+    private static final int wrongLon = -1;
     private TextView tvLocation;
     private List<Forecast> forecasts;
     private CardAdapter adapter;
@@ -104,7 +120,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionCallbac
             if (lastLocation != null) {
                 updateWeather(lastLocation.getLatitude(), lastLocation.getLongitude(), this);
             } else {
-                updateWeather(-1, -1, this);
+                updateWeather(wrongLat, wrongLon, this);
             }
         }
     }
@@ -124,10 +140,10 @@ public class MainActivity extends AppCompatActivity implements ConnectionCallbac
             @Override
             public void run() {
                 final JSONObject[] json = new JSONObject[1];
-                if (lat == -1 && lon == -1) {
+                if (lat == wrongLat && lon == wrongLon) {
                     try {
                         json[0] = new JSONObject(PreferenceManager.
-                                getDefaultSharedPreferences(context).getString("theJson", ""));
+                                getDefaultSharedPreferences(context).getString(JSON_KEY, ""));
                     } catch (JSONException e) {
                         Log.e(TAG, "Unable to create json", e);
                     }
@@ -135,7 +151,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionCallbac
                     json[0] = RemoteFetch.getJSON(lat, lon);
                     if (json[0] != null) {
                         PreferenceManager.getDefaultSharedPreferences(context).edit()
-                                .putString("theJson", json[0].toString()).apply();
+                                .putString(JSON_KEY, json[0].toString()).apply();
                     }
                 }
                 handler.post(new Runnable() {
@@ -151,13 +167,13 @@ public class MainActivity extends AppCompatActivity implements ConnectionCallbac
 
     private void renderWeather(JSONObject json) {
         try {
-            JSONArray jsonArray = json.getJSONArray("list");
-            tvLocation.setText(json.getJSONObject("city").getString("name"));
+            JSONArray jsonArray = json.getJSONArray(LIST);
+            tvLocation.setText(json.getJSONObject(CITY).getString(NAME));
 
             for (int i = 0; i < jsonArray.length(); i++) {
                 JSONObject jDayForecast = jsonArray.getJSONObject(i);
 
-                Date forecastDate = new Date(jDayForecast.getLong("dt") * 1000);
+                Date forecastDate = new Date(jDayForecast.getLong(DATE) * 1000);
                 Date now = new Date();
                 Calendar forecastCalendar = Calendar.getInstance();
                 Calendar nowCalendar = Calendar.getInstance();
@@ -176,18 +192,18 @@ public class MainActivity extends AppCompatActivity implements ConnectionCallbac
 
                 int compare = forecastCalendar.compareTo(nowCalendar);
                 if (compare == 0 || compare == 1) {
-                    JSONObject temp = jDayForecast.getJSONObject("temp");
-                    JSONObject weather = jDayForecast.getJSONArray("weather").getJSONObject(0);
+                    JSONObject temp = jDayForecast.getJSONObject(TEMP);
+                    JSONObject weather = jDayForecast.getJSONArray(WEATHER).getJSONObject(0);
                     Forecast forecast = new Forecast();
 
-                    forecast.setDescription(weather.getString("description"));
-                    forecast.setAverageDay(temp.getDouble("day"));
-                    forecast.setAverageNight(temp.getDouble("night"));
-                    forecast.setWind(jDayForecast.getDouble("speed"));
-                    forecast.setPressure(jDayForecast.getDouble("pressure"));
-                    forecast.setHumidity(jDayForecast.getDouble("humidity"));
+                    forecast.setDescription(weather.getString(DESCRIPTION));
+                    forecast.setAverageDay(temp.getDouble(DAY));
+                    forecast.setAverageNight(temp.getDouble(NIGHT));
+                    forecast.setWind(jDayForecast.getDouble(SPEED));
+                    forecast.setPressure(jDayForecast.getDouble(PRESSURE));
+                    forecast.setHumidity(jDayForecast.getDouble(HUMIDITY));
                     forecast.setDate(forecastDate);
-                    forecast.setIconName(weather.getString("icon"));
+                    forecast.setIconName(weather.getString(ICON));
 
                     forecasts.add(forecast);
                 }

@@ -18,6 +18,7 @@ public class RemoteFetch {
     private static final String APPID = "68ecb9f534e9aa87f423b522070def30";
     private static final String OPEN_WEATHER_MAP_API =
             "http://api.openweathermap.org/data/2.5/forecast/daily?lat=%f&lon=%f&units=metric&cnt=5&APPID=%s";
+    private static final String COD = "cod";
 
     public static JSONObject getJSON(final double lat, final double lon) {
         try {
@@ -35,7 +36,7 @@ public class RemoteFetch {
 
             JSONObject data = new JSONObject(json.toString());
 
-            if (data.getInt("cod") != 200) {
+            if (data.getInt(COD) != 200) {
                 return null;
             }
 

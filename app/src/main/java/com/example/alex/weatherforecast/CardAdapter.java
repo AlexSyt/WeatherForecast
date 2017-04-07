@@ -15,6 +15,12 @@ import java.util.List;
 
 public class CardAdapter extends RecyclerView.Adapter<CardAdapter.CardViewHolder> {
 
+    private final static String DATE_FORMAT = "dd.MM.yyyy";
+    private final static String AVERAGE_DAY_LAYOUT = "Average Day: %.2f ℃";
+    private final static String AVERAGE_NIGHT_LAYOUT = "Average Night: %.2f ℃";
+    private final static String WIND_LAYOUT = "Wind: %.2f km/h";
+    private final static String PRESSURE_LAYOUT = "Pressure: %.2f hPa";
+    private final static String HUMIDITY_LAYOUT = "Humidity: %.2f%%";
     private final static String ICON_PATH = "http://openweathermap.org/img/w/";
     private final static String ICON_EXTENSION = ".png";
     private final List<Forecast> forecasts;
@@ -35,14 +41,14 @@ public class CardAdapter extends RecyclerView.Adapter<CardAdapter.CardViewHolder
 
     @Override
     public void onBindViewHolder(CardViewHolder holder, int position) {
-        SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy");
+        SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT);
         Forecast forecast = forecasts.get(position);
         holder.tvDescription.setText(forecast.getDescription().toUpperCase());
-        holder.tvAverageDay.setText(String.format("Average Day: %.2f ℃", forecast.getAverageDay()));
-        holder.tvAverageNight.setText(String.format("Average Night: %.2f ℃", forecast.getAverageNight()));
-        holder.tvWind.setText(String.format("Wind: %.2f km/h", forecast.getWind()));
-        holder.tvPressure.setText(String.format("Pressure: %.2f hPa", forecast.getPressure()));
-        holder.tvHumidity.setText(String.format("Humidity: %.2f", forecast.getHumidity()) + "%");
+        holder.tvAverageDay.setText(String.format(AVERAGE_DAY_LAYOUT, forecast.getAverageDay()));
+        holder.tvAverageNight.setText(String.format(AVERAGE_NIGHT_LAYOUT, forecast.getAverageNight()));
+        holder.tvWind.setText(String.format(WIND_LAYOUT, forecast.getWind()));
+        holder.tvPressure.setText(String.format(PRESSURE_LAYOUT, forecast.getPressure()));
+        holder.tvHumidity.setText(String.format(HUMIDITY_LAYOUT, forecast.getHumidity()));
         holder.tvDate.setText(sdf.format(forecast.getDate()));
         String iconUrl = ICON_PATH + forecast.getIconName() + ICON_EXTENSION;
         Picasso.with(context).load(iconUrl).into(holder.ivWeatherIcon);
