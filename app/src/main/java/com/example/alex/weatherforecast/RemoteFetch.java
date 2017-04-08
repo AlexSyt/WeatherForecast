@@ -12,6 +12,9 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 
+/**
+ * This is the class that you need to get data from OpenWeatherMap.
+ */
 public class RemoteFetch {
 
     private static final String TAG = RemoteFetch.class.getSimpleName();
@@ -20,6 +23,13 @@ public class RemoteFetch {
             "http://api.openweathermap.org/data/2.5/forecast/daily?lat=%f&lon=%f&units=metric&cnt=5&APPID=%s";
     private static final String COD = "cod";
 
+    /**
+     * Getting json-object with weather forecast.
+     *
+     * @param lat latitude of current location.
+     * @param lon longitude of current location.
+     * @return JSONObject with forecast if the data has been loaded correctly; null otherwise.
+     */
     public static JSONObject getJSON(final double lat, final double lon) {
         try {
             URL url = new URL(String.format(OPEN_WEATHER_MAP_API, lat, lon, APPID));

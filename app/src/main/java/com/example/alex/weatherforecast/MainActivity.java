@@ -17,6 +17,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -37,6 +38,8 @@ public class MainActivity extends AppCompatActivity implements ConnectionCallbac
 
     private final String TAG = MainActivity.class.getSimpleName();
     private static final String JSON_KEY = "theJson";
+    private static final String UNABLE_TO_LOAD_FORECAST = "Unable to load forecast. " +
+            "Check the Internet and Location and try to reload the forecast.";
     private static final String LIST = "list";
     private static final String CITY = "city";
     private static final String NAME = "name";
@@ -135,6 +138,17 @@ public class MainActivity extends AppCompatActivity implements ConnectionCallbac
 
     }
 
+    /**
+     * Creates a new thread for receiving and processing of json-object with forecast.
+     * If it was not possible to get the current latitude and longitude - we are trying to load
+     * the cached version of forecast. Otherwise we load the forecast from the Internet.
+     * If the forecast was loaded correctly - we process and display it. Otherwise, we inform
+     * the user about the problem.
+     *
+     * @param lat     latitude of current location.
+     * @param lon     longitude of current location.
+     * @param context current Context.
+     */
     private void updateWeather(final double lat, final double lon, final Context context) {
         new Thread() {
             @Override
@@ -145,7 +159,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionCallbac
                         json[0] = new JSONObject(PreferenceManager.
                                 getDefaultSharedPreferences(context).getString(JSON_KEY, ""));
                     } catch (JSONException e) {
-                        Log.e(TAG, "Unable to create json", e);
+                        Log.e(TAG, "Unable to load json from cache", e);
                     }
                 } else {
                     json[0] = RemoteFetch.getJSON(lat, lon);
@@ -157,14 +171,25 @@ public class MainActivity extends AppCompatActivity implements ConnectionCallbac
                 handler.post(new Runnable() {
                     @Override
                     public void run() {
-                        renderWeather(json[0]);
-                        adapter.notifyDataSetChanged();
+                        try {
+                            renderWeather(json[0]);
+                            adapter.notifyDataSetChanged();
+                        } catch (NullPointerException e) {
+                            Toast.makeText(MainActivity.this, UNABLE_TO_LOAD_FORECAST,
+                                    Toast.LENGTH_LONG).show();
+                            Log.e(TAG, "json with forecast == null", e);
+                        }
                     }
                 });
             }
         }.start();
     }
 
+    /**
+     * Converts the json-object to objects of Forecast class.
+     *
+     * @param json json-object with forecast.
+     */
     private void renderWeather(JSONObject json) {
         try {
             JSONArray jsonArray = json.getJSONArray(LIST);
